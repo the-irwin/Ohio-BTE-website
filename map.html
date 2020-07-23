@@ -1,0 +1,325 @@
+<!DOCTYPE HTML>
+<!--
+Transitive by TEMPLATED
+templated.co @templatedco
+Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
+<html lang='en'>
+    <head>
+        <title>Map</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="stylesheet" href="assets/css/main.css" />
+    </head>
+    <style>
+        div {
+            padding-right: 2%;
+            padding-left: 2%;
+            padding-top: 10px;
+        }
+        form {
+            padding-right: 2%;
+            padding-left: 2%;
+        }
+    </style>
+    <body class="subpage">
+
+        <!-- Header -->
+        <header id="header">
+            <div class="logo"><a href="index.html">Ohio Build The Earth</a></div>
+            <a href="#menu" class="toggle"><span>Menu</span></a>
+        </header>
+
+        <!-- Nav -->
+        <nav id="menu">
+            <ul class="links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="showcase.html">Showcase</a></li>
+                <li><a href="faq.html">FAQ</a></li>
+                <li><a href="map.html">Map</a></li>
+                <li><a href="contact.html">Contact Us</a></li>
+            </ul>
+        </nav>
+
+        <!-- One -->
+        <div class="content">
+            <header class="align-center">
+                <h2>Map</h2>
+            </header>
+            <p>
+                The red&nbsp;&nbsp;<img src='https://buildtheearth.net/assets/img/location_claimed_multiple.png'>&nbsp;&nbsp;and blue&nbsp;&nbsp;<img src='https://buildtheearth.net/assets/img/location_pending_multiple.png'>&nbsp;&nbsp;markers indicate claimed places. Note that even though a place may be claimed, there is still room to collaborate with the people currently working on those areas if those areas are still being worked on.<br><br>
+                When you zoom in enough, you will see blue&nbsp;&nbsp;<img src='https://i.imgur.com/VDnOdHX.png'>&nbsp;&nbsp;and orange&nbsp;&nbsp;<img src='https://i.imgur.com/YEbFl71.png'>&nbsp;&nbsp;squares. These represent 512x512&nbsp;block regions in game. Blue squares have not yet been claimed, and orange squares have been claimed.
+            </p>
+        </div>
+
+        <div class="form">
+            Coordinates:
+            <input id="map_latitude" class="form-input" size=10 type="number" step="0.000001" max="90" min="-90" value="40.3617" />
+            <input id="map_longitude" class="form-input" size=10 type="number" step="0.000001" max="180" min="-180" value="-82.7417" />
+            Teleport command: <span style="font-family: monospace" id="map_tpll_command">/tpll 51.5 0</span>
+            <i title="Copy command" id="copy-command" data-clipboard-target="#map_tpll_command" class="fa fa-copy"></i></a>
+        </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" type="fa1fcdb76f1ce02620856bc1-text/javascript"></script>
+    <div id="map" style='width: 96%; height: 600px; left:2%'></div>
+    </div>
+</div>
+</div>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous" type="fa1fcdb76f1ce02620856bc1-text/javascript"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" type="fa1fcdb76f1ce02620856bc1-text/javascript"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.Default.css" integrity="sha256-LWhzWaQGZRsWFrrJxg+6Zn8TT84k0/trtiHBc6qcGpY=" crossorigin="anonymous" />
+<script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin="" type="fa1fcdb76f1ce02620856bc1-text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster.js" integrity="sha256-WL6HHfYfbFEkZOFdsJQeY7lJG/E5airjvqbznghUzRw=" crossorigin="anonymous" type="fa1fcdb76f1ce02620856bc1-text/javascript"></script>
+<script src="https://buildtheearth.net/assets/js/maps.js?v=4" type="fa1fcdb76f1ce02620856bc1-text/javascript"></script>
+<style>
+    #copy-command {
+        font-size: 0.6em;
+        padding: 3px;
+        box-shadow: 0 0 3px 0 #999;
+        border-radius: 4px;
+    }
+</style>
+<script type="fa1fcdb76f1ce02620856bc1-text/javascript">
+    var proxy = 'https://cors-anywhere.herokuapp.com/'
+        new ClipboardJS('#copy-command').on('success', function() { alert('Copied'); });
+        let colors = {
+            free: 'transparent',
+            busy: 'orange',
+            finished: 'green'
+        };
+        let statusTexts = {
+            free: 'Unclaimed',
+            busy: '%1, worked on by %2',
+            finished: '%1, finished'
+        };
+        let map = null;
+        document.addEventListener('DOMContentLoaded', function() {
+            map = createLeafletMap('map', [40.3617, -82.7417], 7, {
+                scrollWheelZoom: 'center',
+    			doubleClickZoom: 'center',
+    			touchZoom:       'center'
+            });
+
+            let iconLocation = L.icon({ iconUrl: 'https://buildtheearth.net/assets/img/location_claimed.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [5, -17] });
+            let iconPending = L.icon({ iconUrl: 'https://buildtheearth.net/assets/img/location_pending.png', iconSize: [10, 10], iconAnchor: [5, 5], popupAnchor: [5, -17] });
+
+            let iconLocationMultiple = L.icon({ iconUrl: 'https://buildtheearth.net/assets/img/location_claimed_multiple.png', iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [8, -17] });
+            let iconLocationTwo = L.icon({ iconUrl: 'https://buildtheearth.net/assets/img/location_claimed_two.png', iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [8, -17] });
+            let iconPendingMultiple = L.icon({ iconUrl: 'https://buildtheearth.net/assets/img/location_pending_multiple.png', iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [8, -17] });
+            let iconPendingTwo = L.icon({ iconUrl: 'https://buildtheearth.net/assets/img/location_pending_two.png', iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [8, -17] });
+
+            let gMarkersPending = L.markerClusterGroup({
+                maxClusterRadius: 25,
+                iconCreateFunction: (cluster) => cluster.getChildCount() == 2 ? iconPendingTwo : iconPendingMultiple
+            }).addTo(map);
+            let gMarkers = L.markerClusterGroup({
+                maxClusterRadius: 25,
+                iconCreateFunction: (cluster) => cluster.getChildCount() == 2 ? iconLocationTwo : iconLocationMultiple
+            }).addTo(map);
+            let gRegions = L.layerGroup().addTo(map);
+
+            let crosshair = L.marker(map.getCenter(), { icon: L.icon({
+                iconUrl: 'https://buildtheearth.net/assets/img/crosshair.png',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10],
+                popupAnchor: [10, 10]
+            }) }).addTo(map);
+
+            map.on('move zoomstart zoom zoomend', function(e) {
+                let ctr = e.target.getCenter();
+                crosshair.setLatLng(ctr);
+                crosshair.bindTooltip(ctr.lat.toFixed(6) + ', ' + ctr.lng.toFixed(6));
+            });
+
+            let boxes = {};
+            let boxesPending = {};
+            let curBoxes = null;
+            let setMarkers = function(str) {
+                if (curBoxes == str)
+                    return;
+                curBoxes = str;
+                gMarkers.clearLayers();
+                gMarkersPending.clearLayers();
+
+                for(loc of boxes[str])
+                    gMarkers.addLayer(L.marker([loc.latitude, loc.longitude], { icon: iconLocation }).bindTooltip('<strong>' + loc.name + '</strong><br>' + loc.manager));
+
+                for(loc of boxesPending[str])
+                    gMarkersPending.addLayer(L.marker([loc.latitude, loc.longitude], { icon: iconPending }).bindTooltip('<strong>'+loc.name+'</strong> (pending)<br>'+loc.user));
+            }
+
+            let loading = false;
+            let updateLocations = function() {
+                if (loading) {
+                    return;
+                }
+
+                let ctr = map.getCenter();
+
+                let params = {
+                    x: Math.round((ctr.lat / 60) / 0.5) * 0.5 - 0.5,
+                    z: Math.round((ctr.lng / 60) / 0.5) * 0.5 - 0.5
+                };
+                if (params.x < -1 || params.x > 1 || params.z < -5 || params.z > 5)
+                    return;
+
+                let str = params.x+"."+params.z;
+                if (boxes[str]) {
+                    setMarkers(str);
+                    return;
+                }
+
+                loading = true;
+                $.get(proxy + 'https://buildtheearth.net/map/data/locations', params, function(response) {
+                    boxes[str] = response.locations;
+                    $.get(proxy + 'https://buildtheearth.net/map/data/pending', params, function(response) {
+                        boxesPending[str] = response.locations;
+                        loading = false;
+                        setMarkers(str);
+                    });
+                });
+            };
+            updateLocations();
+
+            let regionCoordinates = function(dx, dz, coordinates) {
+                let stdMoveLat = coordinates[1][0] - coordinates[0][0];
+                let stdMoveLon = coordinates[3][1] - coordinates[0][1];
+                let stepMoveLat = coordinates[3][0] - coordinates[0][0];
+                let stepMoveLon = coordinates[1][1] - coordinates[0][1];
+
+                let dlat = dx * stepMoveLat + dz * stdMoveLat;
+                let dlon = dz * stepMoveLon + dx * stdMoveLon;
+
+                // Order:
+                // topleft
+                // topright
+                // bottomright
+                // bottomleft
+                return [
+                    [coordinates[0][0] + dlat, coordinates[0][1] + dlon],
+                    [coordinates[1][0] + dlat, coordinates[1][1] + dlon],
+                    [coordinates[2][0] + dlat, coordinates[2][1] + dlon],
+                    [coordinates[3][0] + dlat, coordinates[3][1] + dlon]
+                ];
+            };
+
+            let dontUpdateInputs = false;
+            let loadingAlready = false;
+            let previousCoordinates = null;
+            let updateMap = function(e) {
+                updateLocations();
+
+                let ctr = map.getCenter();
+
+                if (dontUpdateInputs) {
+                    dontUpdateInputs = false;
+                } else {
+                    let lat = Math.round(ctr.lat * 1000000) / 1000000;
+                    let lon = Math.round(ctr.lng * 1000000) / 1000000;
+                    $('#map_latitude').val(lat);
+                    $('#map_longitude').val(lon);
+                    $('#map_tpll_command').html('/tpll ' + lat + ' ' + lon);
+                }
+
+                if (map.getZoom() < 13) {
+                    gRegions.clearLayers();
+                    return;
+                }
+                // Convert latln to regionXZ
+                let coords = map.getCenter();
+                if (!loadingAlready && (previousCoordinates || '').toString() != coords.toString()) {
+                    previousCoordinates = coords;
+                    $.get(proxy + 'https://buildtheearth.net/map/data', {
+                        'latitude': coords.lat,
+                        'longitude': coords.lng
+                    }, function(response) {
+                        loadingAlready = false;
+                        gRegions.clearLayers();
+                        let centerX = response.x;
+                        let centerZ = response.z;
+                        for(let dx = -4; dx < 5; dx++) {
+                            for(let dz = -4; dz < 5; dz++) {
+                                let xzstr = (centerX+dx) + "." + (centerZ+dz);
+                                let region = response.regions[xzstr];
+                                if(!region) {
+                                    region = { status: 'free' };
+                                }
+                                let coordinates = regionCoordinates(dx, dz, response.coordinates);
+                                let text = `${xzstr}<br>${statusTexts[region.status].replace('%1', region.location).replace('%2', region.user || region.buildTeam)}`;
+                                let poly = regionRectangle(coordinates, text, colors[region.status]);
+                                gRegions.addLayer(poly);
+                            }
+                        }
+                    }, 'json');
+                }
+            };
+            map.on('moveend', updateMap);
+            updateMap({
+                e: {
+                    target: map
+                }
+            });
+
+            $('#map_latitude, #map_longitude').change(function() {
+                dontUpdateInputs = true;
+                map.panTo([
+                    $('#map_latitude').val(),
+                    $('#map_longitude').val()
+                ]);
+                dontUpdateInputs = false;
+            });
+
+
+                        let handler = function(result) {
+                if (result.state === 'granted') {
+                    navigator.geolocation.getCurrentPosition(handle_pos, e => false);
+                } else if (result.state === 'prompt') {
+                    navigator.geolocation.getCurrentPosition(handle_pos, e => false);
+                }
+            }
+
+            // Thanks to @Drew Snow#1286
+            try {
+                navigator.permissions.query({ name: 'geolocation' }).then(function (result) {
+                    result.onchange = handler;
+                    handler(result);
+                });
+            } catch (e) {
+            }
+
+            let handle_pos = function(location) {
+                let coords = location.coords,
+            		inp_lat = $('#map_latitude'),
+                	inp_long = $('#map_longitude');
+                inp_lat.val(coords.latitude);
+                inp_long.val(coords.longitude);
+                inp_lat.change();
+            }
+                    });
+</script>
+<script src="https://ajax.cloudflare.com/cdn-cgi/scripts/7089c43e/cloudflare-static/rocket-loader.min.js" data-cf-settings="fa1fcdb76f1ce02620856bc1-|49" defer=""></script></body>
+</html>
+
+
+<!-- Footer -->
+<footer id="footer" class="wrapper">
+    <div class="inner">
+        <div class="copyright"> 
+            Map by Xesau
+            &copy; Build The Earth. <br>Design: <a href="https://templated.co/">TEMPLATED</a>. Released under the <a href="https://templated.co/license">Creative Commons</a> license.
+        </div>
+    </div>
+</footer>
+
+<!-- Scripts -->
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/jquery.scrolly.min.js"></script>
+<script src="assets/js/jquery.scrollex.min.js"></script>
+<script src="assets/js/skel.min.js"></script>
+<script src="assets/js/util.js"></script>
+<script src="assets/js/main.js"></script>
+
+</body>
+</html>
